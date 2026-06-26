@@ -29,7 +29,6 @@ class DashboardView : BorderPane() {
         bottom = buildControlBar()
     }
 
-
     private fun buildHeader(): VBox {
         return VBox(5.0).apply {
             children.addAll(
@@ -41,9 +40,7 @@ class DashboardView : BorderPane() {
 
     private fun buildCenterArea(): VBox {
         val grid = GridPane().apply {
-            hgap = 20.0
-            vgap = 20.0
-            padding = Insets(20.0, 0.0, 20.0, 0.0)
+            hgap = 20.0; vgap = 20.0; padding = Insets(20.0, 0.0, 20.0, 0.0)
         }
 
         grid.add(createCard("FOTOVOLTAICO", pvLabel, "#fbbf24"), 0, 0)
@@ -64,8 +61,7 @@ class DashboardView : BorderPane() {
 
     private fun buildControlBar(): HBox {
         return HBox(15.0).apply {
-            alignment = Pos.CENTER
-            padding = Insets(15.0, 0.0, 0.0, 0.0)
+            alignment = Pos.CENTER; padding = Insets(15.0, 0.0, 0.0, 0.0)
             children.addAll(
                 Button("Balanced").apply { setOnAction { updateMode("BALANCED") } },
                 Button("Direct").apply { setOnAction { updateMode("DIRECT") } },
@@ -86,9 +82,7 @@ class DashboardView : BorderPane() {
         }
     }
 
-
     fun updateMetrics(pv: Double, load: Double, batteryKw: Double, batterySoc: Int, gridKw: Double, tick: Int) {
-        // Platform.runLater garantisce che la UI si aggiorni nel thread corretto di JavaFX
         Platform.runLater {
             pvLabel.text = String.format("%.2f kW", pv)
             loadLabel.text = String.format("%.2f kW", load)

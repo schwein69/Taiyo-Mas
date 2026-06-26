@@ -1,6 +1,8 @@
 MAS taiyo {
     infrastructure: Centralized
 
+    environment: env.TaiyoEnvironment
+
     agents:
         agent1
 
