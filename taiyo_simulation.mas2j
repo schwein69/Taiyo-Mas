@@ -1,0 +1,8 @@
+MAS taiyo {
+    infrastructure: Centralized
+
+    agents:
+        agent1
+
+    aslSourcePath: "src/main/resources/asl";
+}
