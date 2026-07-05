@@ -4,6 +4,8 @@ class Car(
     val batteryCapacityKwh: Double = 50.0,
     val maxChargePowerKw: Double = 7.4
 ) {
+    var isCharging: Boolean = false
+
     // Carica attuale dell'auto
     var currentChargeKwh: Double = 5.0
         private set
@@ -24,6 +26,7 @@ class Car(
 
     fun charge(powerKw: Double, deltaTimeHours: Double) {
         if (!isPluggedIn) return
+        isCharging = true
 
         val actualPowerKw = powerKw.coerceAtMost(maxChargePowerKw)
 

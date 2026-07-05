@@ -4,7 +4,11 @@ MAS taiyo {
     environment: env.TaiyoEnvironment
 
     agents:
-        agent1
+        house_grid house_grid.asl
+        car        car.asl
+        battery    battery.asl
+        panels     panel.asl
+        weather    weather.asl
 
     aslSourcePath: "src/main/resources/asl";
 }
