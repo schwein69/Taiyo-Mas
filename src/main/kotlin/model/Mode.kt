@@ -13,7 +13,7 @@ enum class Mode {
 
     /**
      * Alimentazione diretta.
-     * Bypass dell'accumulo (es. per manutenzione o guasto). L'energia solare
+     * Bypass dell'accumulo. L'energia solare
      * va direttamente ai carichi; l'eccesso viene immesso in rete.
      */
     DIRECT,
