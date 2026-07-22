@@ -1,4 +1,7 @@
-package planning
+package planning.domain
+
+import planning.Proposition
+import planning.StripsAction
 
 object BatteryDomain {
     val actions = setOf(
@@ -10,7 +13,11 @@ object BatteryDomain {
         ),
         StripsAction(
             name = "charge_from_grid",
-            preconditions = setOf(Proposition("grid_connected"), Proposition("loads_disconnected"), Proposition("battery_critical")),
+            preconditions = setOf(
+                Proposition("grid_connected"),
+                Proposition("loads_disconnected"),
+                Proposition("battery_critical")
+            ),
             addEffects = setOf(Proposition("battery_ok")),
             deleteEffects = setOf(Proposition("battery_critical"))
         )

@@ -6,6 +6,7 @@ import jason.asSemantics.Unifier
 import jason.asSyntax.ASSyntax
 import jason.asSyntax.ListTerm
 import jason.asSyntax.Term
+import planning.domain.BatteryDomain
 
 class CalculatePlan : DefaultInternalAction() {
 

@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun TaiyoDashboard() {
-    // La lettura di triggerUpdate rende l'intera funzione reattiva ai cambiamenti!
     val updateCount = GuiApp.triggerUpdate
     val model = GuiApp.sharedModel
 
@@ -17,12 +16,11 @@ fun TaiyoDashboard() {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF5F5F5)) {
             Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
 
-                Text("Sistema TAIYO (Tick: ${model.timeStep})", style = MaterialTheme.typography.h4)
+                Text("sistema TAIYO (Tick: ${model.timeStep})", style = MaterialTheme.typography.h4)
                 Text("Meteo attuale: ${model.weather.status.name}", style = MaterialTheme.typography.subtitle1)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(modifier = Modifier.weight(1f)) {
-                    // Colonna SX: Fonti ed Erogatori
                     Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         PanelsCard(model)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -33,7 +31,6 @@ fun TaiyoDashboard() {
 
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    // Colonna DX: Casa e Controlli
                     Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
                         HouseGridCard(model)
                         Spacer(modifier = Modifier.height(8.dp))
