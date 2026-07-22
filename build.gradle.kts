@@ -1,6 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.3.21"
-    id("org.openjfx.javafxplugin") version "0.1.0"
+    kotlin("jvm") version "2.4.10"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    id("org.jetbrains.compose") version "1.12.0-beta02"
     application
 }
 
@@ -9,6 +10,7 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    google()
 }
 
 dependencies {
@@ -17,19 +19,15 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
     implementation("io.github.jason-lang:jason-interpreter:3.2.0")
-    val javaFxVersion = "21.0.2"
-    implementation("org.openjfx:javafx-controls:$javaFxVersion")
-    implementation("org.openjfx:javafx-graphics:$javaFxVersion")
-    implementation("org.openjfx:javafx-base:$javaFxVersion")
+    implementation(compose.desktop.currentOs)
+    implementation("org.jetbrains.compose.material:material:1.12.0-beta02")
+    implementation("org.jetbrains.compose.ui:ui:1.12.0-beta02")
+    implementation("org.jetbrains.compose.foundation:foundation:1.12.0-beta02")
 }
 
-javafx {
-    version = "21.0.2"
-    modules("javafx.controls", "javafx.graphics", "javafx.base")
-}
 
 application {
-    mainClass.set("View.GuiAppKt")
+    mainClass.set("view.GuiAppKt")
 }
 
 kotlin {

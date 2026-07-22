@@ -1,14 +1,14 @@
-MAS taiyo {
-    infrastructure: Centralized
+MAS taiyo_simulation {
+    infrastructure: Centralised
 
-    environment: env.TaiyoEnvironment
+    environment: TaiyoEnvironment
 
     agents:
-        house_grid house_grid.asl
-        car        car.asl
-        battery    battery.asl
-        panels     panel.asl
-        weather    weather.asl
+        house_grid house_grid.asl;
+        car        car.asl;
+        battery    battery.asl;
+        panels     panel.asl;
+        weather    weather.asl;
 
     aslSourcePath: "src/main/resources/asl";
 }

@@ -5,15 +5,17 @@ import jason.asSyntax.Structure
 import jason.environment.Environment
 import kotlinx.coroutines.*
 import view.GuiApp
+import model.Mode
 import java.util.logging.Logger
 import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
- class TaiyoEnvironment : Environment() {
+class TaiyoEnvironment : Environment() {
 
     companion object {
-        val gridConnected: Literal? = Literal.parseLiteral("grid_connected")
-        val blackoutActive: Literal? = Literal.parseLiteral("blackout_active")
+        val gridConnected: Literal = Literal.parseLiteral("grid_connected")
+        val blackoutActive: Literal = Literal.parseLiteral("blackout_active")
     }
 
     private lateinit var logger: Logger
@@ -27,7 +29,6 @@ import kotlin.time.Duration.Companion.milliseconds
         this.logger.info("Initializing TAIYO-MAS Environment...")
 
         this.model = GuiApp.sharedModel
-
         this.simulationScope = CoroutineScope(Dispatchers.Default + Job())
 
         startPhysicalWorld()
@@ -38,18 +39,52 @@ import kotlin.time.Duration.Companion.milliseconds
         var result: Boolean
 
         when (action.functor) {
-            "disconnect_loads" -> {
-                result = executeDisconnectLoads(agName)
+            // AZIONI HOUSE GRID
+            "disconnect_loads" -> result = executeDisconnectLoads(agName)
+            "reconnect_loads" -> result = executeReconnectLoads(agName)
+
+            // AZIONI BATTERIA
+            "battery_standby" -> result = executeBatteryStandby(agName)
+            "battery_resume" -> result = executeBatteryResume(agName)
+
+            // AZIONI PANNELLI
+            "panel_standby" -> {
+                // Esempio: azzera la produzione fisicamente
+                logger.info("[$agName] executed panel_standby. Inverter is OFF.")
+                result = true
             }
-            "reconnect_loads" -> {
-                result = executeReconnectLoads(agName)
+            "panel_resume" -> {
+                logger.info("[$agName] executed panel_resume. Inverter is ON.")
+                result = true
             }
-            "battery_standby" -> {
-                result = executeBatteryStandby(agName)
+            "set_selling_mode" -> {
+                model.mode = Mode.SELLING
+                logger.info("[$agName] executed set_selling_mode. Mode is SELLING.")
+                result = true
             }
-            "battery_resume" -> {
-                result = executeBatteryResume(agName)
+            "set_balanced_mode" -> {
+                model.mode = Mode.BALANCED
+                logger.info("[$agName] executed set_balanced_mode. Mode is BALANCED.")
+                result = true
             }
+            "set_direct_mode" -> {
+                model.mode = Mode.DIRECT
+                logger.info("[$agName] executed set_balanced_mode. Mode is DIRECT.")
+                result = true
+            }
+
+            // AZIONI AUTO
+            "car_start_charging" -> {
+                model.car.isCharging = true
+                logger.info("[$agName] executed car_start_charging.")
+                result = true
+            }
+            "car_stop_charging" -> {
+                model.car.isCharging = false
+                logger.info("[$agName] executed car_stop_charging.")
+                result = true
+            }
+
             else -> {
                 System.err.println("Unknown action: $action by agent $agName")
                 return false
@@ -62,62 +97,59 @@ import kotlin.time.Duration.Companion.milliseconds
         return result
     }
 
-
     private fun executeDisconnectLoads(agentName: String): Boolean {
-        try {
+        return try {
             model.house.disconnectNonEssentialLoads()
-            logger.info("$agentName executed disconnect_loads. Non-essential loads are OFF.")
-            return true
+            logger.info("[$agentName] executed disconnect_loads. Non-essential loads are OFF.")
+            true
         } catch (e: Exception) {
             System.err.println("Error executing disconnect_loads: ${e.message}")
-            return false
+            false
         }
     }
 
     private fun executeReconnectLoads(agentName: String): Boolean {
-        try {
+        return try {
             model.house.reconnectLoads()
-            logger.info("$agentName executed reconnect_loads. Loads are ON.")
-            return true
+            logger.info("[$agentName] executed reconnect_loads. Loads are ON.")
+            true
         } catch (e: Exception) {
             System.err.println("Error executing reconnect_loads: ${e.message}")
-            return false
+            false
         }
     }
 
     private fun executeBatteryStandby(agentName: String): Boolean {
-        try {
+        return try {
             model.currentBatteryFlow = 0.0
-            logger.info("$agentName executed battery_standby.")
-            return true
-        } catch (_: Exception) {
-            return false
-        }
+            logger.info("[$agentName] executed battery_standby.")
+            true
+        } catch (_: Exception) { false }
     }
 
     private fun executeBatteryResume(agentName: String): Boolean {
-        try {
-            logger.info("$agentName executed battery_resume. Battery re-engaged.")
-            return true
-        } catch (_: Exception) {
-            return false
-        }
+        return try {
+            logger.info("[$agentName] executed battery_resume. Battery re-engaged.")
+            true
+        } catch (_: Exception) { false }
     }
 
 
+    // --- AGGIORNAMENTO PERCEZIONI ---
     private fun updateAgentPercepts() {
-        // Clear old state
+        // Pulisce le vecchie percezioni per tutti gli agenti
         clearPercepts("weather")
         clearPercepts("battery")
         clearPercepts("house_grid")
+        clearPercepts("panels")
+        clearPercepts("car")
 
-        // 1. Weather Percepts
+        // 1. Percezioni Meteo
         val wStatus = model.weather.status.name.lowercase()
         addPercept("weather", ASSyntax.createLiteral("weather_status", ASSyntax.createAtom(wStatus)))
 
-        // 2. Battery Percepts
+        // 2. Percezioni Batteria
         addPercept("battery", ASSyntax.createLiteral("battery_soc", ASSyntax.createNumber(model.battery.soc.toDouble())))
-
         val flowDirection = when {
             model.currentBatteryFlow > 0.1 -> "charging"
             model.currentBatteryFlow < -0.1 -> "discharging"
@@ -125,13 +157,41 @@ import kotlin.time.Duration.Companion.milliseconds
         }
         addPercept("battery", ASSyntax.createLiteral("battery_flow", ASSyntax.createAtom(flowDirection)))
 
-        // 3. Grid / Blackout Percepts (Shared between battery and house)
+        // 3. Percezioni House Grid (Modalità sistema e Rete Esterna)
+        val currentMode = model.mode.name.lowercase()
+        addPercept("house_grid", ASSyntax.createLiteral("system_mode", ASSyntax.createAtom(currentMode)))
+
         if (model.house.isGridConnected) {
-            addPercept("battery", gridConnected)
-            addPercept("house_grid", gridConnected)
+            if (!model.house.isBlackout) {
+                addPercept("house_grid", gridConnected)
+            } else {
+                addPercept("house_grid", blackoutActive)
+            }
         }
-        if (model.house.isBlackout) {
-            addPercept("house_grid", blackoutActive)
+
+        // 4. Percezioni Auto Elettrica (Car)
+        if (model.car.isPluggedIn) {
+            addPercept("car", Literal.parseLiteral("car_plugged_in"))
+            addPercept("car", ASSyntax.createLiteral("car_soc", ASSyntax.createNumber(model.car.soc.toDouble())))
+        } else {
+            addPercept("car", Literal.parseLiteral("car_unplugged"))
+        }
+
+        // 5. Percezioni Inverter / Pannelli (Flussi FV calcolati)
+        if (model.mode == Mode.SELLING) {
+            addPercept("panels", Literal.parseLiteral("pv_flow(full_grid_injection)"))
+        } else {
+            val netFlow = model.currentPvFlow - model.house.currentConsumptionKw
+            if (netFlow < 0) {
+                // Assorbe tutto in casa, e richiede aiuto
+                addPercept("panels", Literal.parseLiteral("pv_flow(high_load_all_sources_to_house)"))
+            } else if (model.battery.soc >= 100) {
+                // Batteria piena, il surplus va in rete
+                addPercept("panels", Literal.parseLiteral("pv_flow(battery_full_surplus_to_grid)"))
+            } else {
+                // Funzionamento ibrido standard
+                addPercept("panels", Literal.parseLiteral("pv_flow(combined_distribution)"))
+            }
         }
     }
 
@@ -150,6 +210,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
                 val netFlow = model.currentPvFlow - model.house.currentConsumptionKw
 
+                // Gestione Flussi (La tua logica intatta)
                 if (netFlow > 0) {
                     val absorbed = model.battery.charge(netFlow)
                     model.currentBatteryFlow = absorbed
@@ -179,8 +240,10 @@ import kotlin.time.Duration.Companion.milliseconds
                     model.currentGridFlow = 0.0
                 }
 
-                if (model.house.evChargerKw > 0) {
+                if (model.house.evChargerKw > 0 && model.car.isCharging) {
                     model.car.charge(model.house.evChargerKw, deltaTimeHours)
+                }else if (!model.car.isPluggedIn){
+                    model.car.drive(Random.nextDouble(3.0,4.5)*deltaTimeHours)
                 }
 
                 updateAgentPercepts()
@@ -192,7 +255,7 @@ import kotlin.time.Duration.Companion.milliseconds
     }
 
     private fun notifyModelChangedToView() {
-        GuiApp.instance?.notifyModelChanged()
+        GuiApp.notifyModelChanged()
     }
 
     @Override

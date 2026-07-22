@@ -1,53 +1,37 @@
 package view
 
-import javafx.application.Application
-import javafx.scene.Scene
-import javafx.stage.Stage
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.application
 import interfaces.Taiyo
 import model.TaiyoImpl
-import kotlin.system.exitProcess
 
-class GuiApp : Application(), TaiyoView {
+object GuiApp {
+    val sharedModel: Taiyo = TaiyoImpl()
 
-    private val dashboard = DashboardView()
+    var triggerUpdate by mutableStateOf(0)
+        private set
 
-    companion object {
-        var instance: GuiApp? = null
-        val sharedModel : Taiyo = TaiyoImpl()
-    }
-
-    init {
-        instance = this
-    }
-
-
-    override fun getModel(): Taiyo {
-        return sharedModel
-    }
-
-    override fun notifyModelChanged() {
-        val model = getModel()
-        dashboard.updateMetrics(
-            pv = model.currentPvFlow,                   // Il flusso di energia calcolato
-            load = model.house.currentConsumptionKw,    // Il consumo in tempo reale
-            batteryKw = model.currentBatteryFlow,       // Quanta energia entra/esce dalla batteria
-            batterySoc = model.battery.soc,             // Percentuale (SoC)
-            gridKw = model.currentGridFlow,             // Flusso da/verso la rete
-            tick = model.timeStep
-        )
-        dashboard.updateMode(model.mode.name)
-    }
-
-
-    override fun start(primaryStage: Stage) {
-        primaryStage.title = "TAIYO-MAS"
-        primaryStage.scene = Scene(dashboard, 950.0, 700.0)
-
-        primaryStage.setOnCloseRequest { exitProcess(0) }
-        primaryStage.show()
+    fun notifyModelChanged() {
+        triggerUpdate++
     }
 }
 
-fun main() {
-    Application.launch(GuiApp::class.java)
+fun main() = application {
+    Thread {
+        try {
+            jason.infra.centralised.RunCentralisedMAS.main(arrayOf("taiyo_simulation.mas2j"))
+        } catch (e: Exception) {
+            System.err.println("Errore avvio MAS: ${e.message}")
+        }
+    }.start()
+
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "TAIYO-MAS Smart Home Dashboard"
+    ) {
+        TaiyoDashboard()
+    }
 }

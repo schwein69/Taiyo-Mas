@@ -17,7 +17,6 @@ class HouseGrid(
         private set
 
     var isBlackout: Boolean = false
-        private set
 
     // Import/Export verso l'esterno
     var isGridConnected: Boolean = true

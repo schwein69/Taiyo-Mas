@@ -19,5 +19,5 @@ current_weather(sunny).
 +weather_status(rainy)
     <-  -+current_weather(rainy);
         .print("[WEATHER] Rainy");
-        .send(panels, tell, weather(rainy));
+        .send(panels, tell, weather(rainy)).
 
