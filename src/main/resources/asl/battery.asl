@@ -14,7 +14,7 @@ battery_state(ok).
         .print("[BATTERY] ALLARME: SoC critico (", V, "%)! Rete disponibile.");
         .print("[BATTERY] Chiedo al Planner una strategia di ricarica...");
 
-        planning.calculate_plan([battery_critical, grid_connected], [battery_ok], Plan);
+        planning.CalculatePlan("battery", [battery_critical, grid_connected], [battery_ok], Plan);
         !execute_list(Plan).
 
 +battery_soc(V) : V < 20 & grid_status(blackout)

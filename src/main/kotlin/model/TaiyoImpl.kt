@@ -1,5 +1,8 @@
 package model
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import interfaces.Taiyo
 
 class TaiyoImpl : Taiyo {
@@ -10,10 +13,10 @@ class TaiyoImpl : Taiyo {
     override val car = Car(batteryCapacityKwh = 50.0)
     override val weather = Weather()
 
-    override var timeStep: Int = 0
-    override var mode: Mode = Mode.BALANCED
+    override var timeStep: Int by mutableStateOf(0)
+    override var mode: Mode by mutableStateOf(Mode.BALANCED)
 
-    override var currentPvFlow: Double = 0.0
-    override var currentBatteryFlow: Double = 0.0 // Positivo: carica, Negativo: scarica
-    override var currentGridFlow: Double = 0.0    // Positivo: vendita, Negativo: acquisto
+    override var currentPvFlow: Double by mutableStateOf(0.0)
+    override var currentBatteryFlow: Double by mutableStateOf(0.0) // Positivo: carica, Negativo: scarica
+    override var currentGridFlow: Double by mutableStateOf(0.0)    // Positivo: vendita, Negativo: acquisto
 }

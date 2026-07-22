@@ -5,11 +5,11 @@ import jason.asSyntax.Structure
 import jason.environment.Environment
 import kotlinx.coroutines.*
 import view.GuiApp
-import model.Mode
 import java.util.logging.Logger
 import kotlin.math.abs
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
+import model.Mode.*
 
 class TaiyoEnvironment : Environment() {
 
@@ -22,7 +22,6 @@ class TaiyoEnvironment : Environment() {
     private lateinit var model: Taiyo
     private lateinit var simulationScope: CoroutineScope
 
-    @Override
     override fun init(args: Array<String>?) {
         super.init(args)
         this.logger = Logger.getLogger("TaiyoEnvironment")
@@ -34,7 +33,6 @@ class TaiyoEnvironment : Environment() {
         startPhysicalWorld()
     }
 
-    @Override
     override fun executeAction(agName: String, action: Structure): Boolean {
         var result: Boolean
 
@@ -49,7 +47,6 @@ class TaiyoEnvironment : Environment() {
 
             // AZIONI PANNELLI
             "panel_standby" -> {
-                // Esempio: azzera la produzione fisicamente
                 logger.info("[$agName] executed panel_standby. Inverter is OFF.")
                 result = true
             }
@@ -58,18 +55,18 @@ class TaiyoEnvironment : Environment() {
                 result = true
             }
             "set_selling_mode" -> {
-                model.mode = Mode.SELLING
+                model.mode = SELLING
                 logger.info("[$agName] executed set_selling_mode. Mode is SELLING.")
                 result = true
             }
             "set_balanced_mode" -> {
-                model.mode = Mode.BALANCED
+                model.mode = BALANCED
                 logger.info("[$agName] executed set_balanced_mode. Mode is BALANCED.")
                 result = true
             }
             "set_direct_mode" -> {
-                model.mode = Mode.DIRECT
-                logger.info("[$agName] executed set_balanced_mode. Mode is DIRECT.")
+                model.mode = DIRECT
+                logger.info("[$agName] executed set_direct_mode. Mode is DIRECT.")
                 result = true
             }
 
@@ -137,7 +134,6 @@ class TaiyoEnvironment : Environment() {
 
     // --- AGGIORNAMENTO PERCEZIONI ---
     private fun updateAgentPercepts() {
-        // Pulisce le vecchie percezioni per tutti gli agenti
         clearPercepts("weather")
         clearPercepts("battery")
         clearPercepts("house_grid")
@@ -157,7 +153,7 @@ class TaiyoEnvironment : Environment() {
         }
         addPercept("battery", ASSyntax.createLiteral("battery_flow", ASSyntax.createAtom(flowDirection)))
 
-        // 3. Percezioni House Grid (Modalità sistema e Rete Esterna)
+        // 3. Percezioni House Grid
         val currentMode = model.mode.name.lowercase()
         addPercept("house_grid", ASSyntax.createLiteral("system_mode", ASSyntax.createAtom(currentMode)))
 
@@ -169,7 +165,7 @@ class TaiyoEnvironment : Environment() {
             }
         }
 
-        // 4. Percezioni Auto Elettrica (Car)
+        // 4. Percezioni ricarica auto
         if (model.car.isPluggedIn) {
             addPercept("car", Literal.parseLiteral("car_plugged_in"))
             addPercept("car", ASSyntax.createLiteral("car_soc", ASSyntax.createNumber(model.car.soc.toDouble())))
@@ -177,19 +173,16 @@ class TaiyoEnvironment : Environment() {
             addPercept("car", Literal.parseLiteral("car_unplugged"))
         }
 
-        // 5. Percezioni Inverter / Pannelli (Flussi FV calcolati)
-        if (model.mode == Mode.SELLING) {
+        // 5. Percezioni modalità pannelli
+        if (model.mode == SELLING) {
             addPercept("panels", Literal.parseLiteral("pv_flow(full_grid_injection)"))
         } else {
             val netFlow = model.currentPvFlow - model.house.currentConsumptionKw
             if (netFlow < 0) {
-                // Assorbe tutto in casa, e richiede aiuto
                 addPercept("panels", Literal.parseLiteral("pv_flow(high_load_all_sources_to_house)"))
             } else if (model.battery.soc >= 100) {
-                // Batteria piena, il surplus va in rete
                 addPercept("panels", Literal.parseLiteral("pv_flow(battery_full_surplus_to_grid)"))
             } else {
-                // Funzionamento ibrido standard
                 addPercept("panels", Literal.parseLiteral("pv_flow(combined_distribution)"))
             }
         }
@@ -202,7 +195,7 @@ class TaiyoEnvironment : Environment() {
                 model.timeStep++
                 val deltaTimeHours = 1.0
 
-                model.weather.updateRandomly()
+                //model.weather.updateRandomly()
                 model.currentPvFlow = model.panels.producePower(model.weather)
 
                 model.house.simulateOccupantBehavior()
@@ -210,10 +203,12 @@ class TaiyoEnvironment : Environment() {
 
                 val netFlow = model.currentPvFlow - model.house.currentConsumptionKw
 
-                // Gestione Flussi (La tua logica intatta)
                 if (netFlow > 0) {
-                    val absorbed = model.battery.charge(netFlow)
+                    val chargeBefore = model.battery.currentChargeKw
+                    model.battery.charge(netFlow)
+                    val absorbed = model.battery.currentChargeKw - chargeBefore
                     model.currentBatteryFlow = absorbed
+
                     val leftover = netFlow - absorbed
                     if (leftover > 0) {
                         model.currentGridFlow = leftover
@@ -223,9 +218,14 @@ class TaiyoEnvironment : Environment() {
                     }
                 } else if (netFlow < 0) {
                     if (model.house.isGridConnected && !model.house.isBlackout) {
-                        val providedByBattery = abs(model.battery.discharge(netFlow))
+                        val needed = abs(netFlow)
+                        val chargeBefore = model.battery.currentChargeKw
+                        model.battery.discharge(needed)
+                        val providedByBattery = chargeBefore - model.battery.currentChargeKw
+
                         model.currentBatteryFlow = -providedByBattery
-                        val stillNeeded = abs(netFlow) - providedByBattery
+                        val stillNeeded = needed - providedByBattery
+
                         if (stillNeeded > 0) {
                             model.currentGridFlow = -stillNeeded
                             model.house.interactWithGrid(-stillNeeded, deltaTimeHours)
@@ -242,14 +242,12 @@ class TaiyoEnvironment : Environment() {
 
                 if (model.house.evChargerKw > 0 && model.car.isCharging) {
                     model.car.charge(model.house.evChargerKw, deltaTimeHours)
-                }else if (!model.car.isPluggedIn){
-                    model.car.drive(Random.nextDouble(3.0,4.5)*deltaTimeHours)
                 }
 
                 updateAgentPercepts()
                 notifyModelChangedToView()
 
-                delay(3000.milliseconds)
+                delay(5000L.milliseconds)
             }
         }
     }
@@ -258,7 +256,6 @@ class TaiyoEnvironment : Environment() {
         GuiApp.notifyModelChanged()
     }
 
-    @Override
     override fun stop() {
         super.stop()
         simulationScope.cancel()

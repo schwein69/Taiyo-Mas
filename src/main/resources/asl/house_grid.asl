@@ -39,6 +39,14 @@ active_mode(balanced).
         .print("[HOUSE_GRID] STRATEGIA: Passaggio a modalità SELLING.");
         .broadcast(tell, operation_mode(selling)).
 
+// ==========================================
+// RISPOSTA ALLE RICHIESTE DELLA BATTERIA
+// ==========================================
+
++!disconnect_loads[source(battery)]
+    <-  .print("[HOUSE_GRID] Ricevuta richiesta STRIPS da battery: stacco i carichi.");
+        !do_action(disconnect_loads).
+
 
 
 +!do_action(disconnect_loads)

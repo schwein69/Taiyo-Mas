@@ -1,16 +1,19 @@
 package model
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 class Car(
     val batteryCapacityKwh: Double = 50.0,
     val maxChargePowerKw: Double = 7.4
 ) {
-    var isCharging: Boolean = false
+    var isCharging: Boolean by mutableStateOf(false)
 
-    // Carica attuale dell'auto
-    var currentChargeKwh: Double = 5.0
+    var currentChargeKwh: Double by mutableStateOf(5.0)
         private set
 
-    var isPluggedIn: Boolean = false
+    var isPluggedIn: Boolean by mutableStateOf(false)
         private set
 
     val soc: Int
@@ -22,6 +25,7 @@ class Car(
 
     fun unplug() {
         isPluggedIn = false
+        isCharging = false
     }
 
     fun charge(powerKw: Double, deltaTimeHours: Double) {
