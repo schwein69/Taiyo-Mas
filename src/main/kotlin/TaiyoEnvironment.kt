@@ -7,7 +7,6 @@ import kotlinx.coroutines.*
 import view.GuiApp
 import java.util.logging.Logger
 import kotlin.math.abs
-import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 import model.Mode.*
 

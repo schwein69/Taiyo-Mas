@@ -7,11 +7,11 @@ import interfaces.Taiyo
 
 class TaiyoImpl : Taiyo {
 
-    override val panels = Panel(maxPowerKw = 6.0)
-    override val battery = Battery(capacityKw = 10.0, initialChargeKw = 8.0)
-    override val house = HouseGrid(contractualGridPowerKw = 3.0, essentialLoadKw = 0.5)
-    override val car = Car(batteryCapacityKwh = 50.0)
-    override val weather = Weather()
+    override val panels = PanelImpl(maxPowerKw = 6.0)
+    override val battery = BatteryImpl(capacityKw = 10.0, initialChargeKw = 8.0)
+    override val house = HouseGridImpl(contractualGridPowerKw = 3.0, essentialLoadKw = 0.5)
+    override val car = CarImpl(batteryCapacityKwh = 50.0)
+    override val weather = WeatherImpl()
 
     override var timeStep: Int by mutableStateOf(0)
     override var mode: Mode by mutableStateOf(Mode.BALANCED)

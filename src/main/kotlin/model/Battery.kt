@@ -1,22 +1,28 @@
 package model
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+/**
+ * Rappresenta il contratto per la gestione del sistema di accumulo (batteria)
+ * all'interno del sistema TAIYO-MAS.
+ */
+interface Battery {
+    /** Capacità massima di accumulo della batteria. */
+    val capacityKw: Double
 
-class Battery(val capacityKw: Double, initialChargeKw: Double) {
+    /** Carica energetica attuale accumulata nella batteria. */
+    val currentChargeKw: Double
 
-    var currentChargeKw: Double by mutableStateOf(initialChargeKw)
-        private set
-
+    /** Stato di carica (State of Charge) espresso in percentuale (0-100%). */
     val soc: Int
-        get() = ((currentChargeKw / capacityKw) * 100).toInt()
 
-    fun discharge(amountKw: Double) {
-        currentChargeKw = (currentChargeKw - amountKw).coerceIn(0.0, capacityKw)
-    }
+    /**
+     * Scarica la batteria di una quantità specificata di energia.
+     * @param amountKw Quantità di energia da prelevare.
+     */
+    fun discharge(amountKw: Double)
 
-    fun charge(amountKw: Double) {
-        currentChargeKw = (currentChargeKw + amountKw).coerceIn(0.0, capacityKw)
-    }
+    /**
+     * Carica la batteria di una quantità specificata di energia.
+     * @param amountKw Quantità di energia da immettere.
+     */
+    fun charge(amountKw: Double)
 }

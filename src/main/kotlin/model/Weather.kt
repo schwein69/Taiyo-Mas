@@ -1,47 +1,29 @@
 package model
 
-import kotlin.random.Random
-
+/**
+ * Rappresenta i possibili stati climatici supportati dalla simulazione.
+ */
 enum class WeatherStatus {
-    SUNNY, NIGHT, FOGGY, RAINY
+    SUNNY,
+    NIGHT,
+    FOGGY,
+    RAINY
 }
 
-class Weather {
+/**
+ * Interfaccia che definisce il contratto per la gestione dello stato meteo
+ * e dei suoi effetti sui componenti del sistema TAIYO-MAS.
+ */
+interface Weather {
+    /** Lo stato climatico corrente del sistema. */
+    var status: WeatherStatus
 
-    var status: WeatherStatus = WeatherStatus.SUNNY
-        set(value) {
-            field = value
-            when (value) {
-                WeatherStatus.SUNNY -> {
-                    solarIrradiance = 1.0
-                    negativeImpact = false
-                }
-                WeatherStatus.NIGHT -> {
-                    solarIrradiance = 0.0
-                    negativeImpact = false
-                }
-                WeatherStatus.FOGGY -> {
-                    solarIrradiance = 0.4
-                    negativeImpact = true
-                }
-                WeatherStatus.RAINY -> {
-                    solarIrradiance = 0.1
-                    negativeImpact = true
-                }
-            }
-        }
+    /** Fattore di irraggiamento solare normalizzato (compreso tra 0.0 e 1.0). */
+    val solarIrradiance: Double
 
-    var solarIrradiance: Double = 1.0
-        private set
+    /** Flag che indica se la condizione meteo corrente comporta criticità operative. */
+    val negativeImpact: Boolean
 
-    var negativeImpact: Boolean = false
-        private set
-
-    fun updateRandomly() {
-        val allStatuses = WeatherStatus.entries.toTypedArray()
-
-        val randomIndex = Random.nextInt(allStatuses.size)
-
-        this.status = allStatuses[randomIndex]
-    }
+    /** Aggiorna casualmente lo stato del meteo tra quelli disponibili. */
+    fun updateRandomly()
 }

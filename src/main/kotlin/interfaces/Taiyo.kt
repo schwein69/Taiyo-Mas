@@ -1,17 +1,18 @@
 package interfaces
 
-import model.Car
-import model.Battery
-import model.HouseGrid
+import model.CarImpl
+import model.BatteryImpl
+import model.HouseGridImpl
 import model.Mode
-import model.Panel
+import model.PanelImpl
+import model.Panelmpl
 import model.Weather
 
 interface Taiyo {
-    val panels: Panel
-    val battery: Battery
-    val house: HouseGrid
-    val car: Car
+    val panels: PanelImpl
+    val battery: BatteryImpl
+    val house: HouseGridImpl
+    val car: CarImpl
     val weather: Weather
 
     var timeStep: Int
