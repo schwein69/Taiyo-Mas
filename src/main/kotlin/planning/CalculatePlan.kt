@@ -7,6 +7,7 @@ import jason.asSyntax.ASSyntax
 import jason.asSyntax.ListTerm
 import jason.asSyntax.Term
 import planning.domain.BatteryDomain
+import planning.domain.HouseGridDomain
 
 class CalculatePlan : DefaultInternalAction() {
 
@@ -15,14 +16,14 @@ class CalculatePlan : DefaultInternalAction() {
             val modelType = args[0].toString().replace("\"", "")
 
             val initialList = args[1] as ListTerm
-            val initialState = initialList.map { Proposition(it.toString()) }.toSet()
-
+            val initialState = initialList.map { Proposition(it.toString())}.toSet()
+8
             val goalList = args[2] as ListTerm
-            val goalState = goalList.map { Proposition(it.toString()) }.toSet()
+            val goalState = goalList.map { Proposition(it.toString())}.toSet()
 
             val domainActions = when (modelType) {
                 "battery" -> BatteryDomain.actions
-                // "emergency" -> EmergencyDomain.actions
+                "house_grid" -> HouseGridDomain.actions
                 else -> {
                     ts.logger.severe("Dominio sconosciuto: $modelType")
                     return false

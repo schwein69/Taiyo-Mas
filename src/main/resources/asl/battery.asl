@@ -1,9 +1,7 @@
 grid_status(connected).
 battery_state(ok).
 
-// ==========================================
-// GESTIONE STATO DI RICARICA (SoC)
-// ==========================================
+// GESTIONE STATO DI RICARICA
 
 +battery_soc(V) : V >= 20
     <-  -+battery_state(ok);
@@ -22,18 +20,13 @@ battery_state(ok).
         .print("[BATTERY] SoC critico (", V, "%), ma c'è BLACKOUT. Resto fermo.").
 
 
-// ==========================================
 // GESTIONE DEL FLUSSO
-// ==========================================
 
 +battery_flow(charging)    <- .print("[BATTERY] Flusso: IN CARICA.").
 +battery_flow(discharging) <- .print("[BATTERY] Flusso: IN SCARICA.").
 +battery_flow(idle)        <- .print("[BATTERY] Flusso: FERMO.").
 
 
-// ==========================================
-// REAZIONE ALLE INFORMAZIONI DEGLI AGENTI
-// ==========================================
 
 // --- Reazione Autonoma alla Rete ---
 +grid_status(blackout)[source(A)]
@@ -62,9 +55,6 @@ battery_state(ok).
         !do_action(battery_selling).
 
 
-// ==========================================
-// MOTORE DI ESECUZIONE DEL PIANO STRIPS
-// ==========================================
 
 +!execute_list([]).
 +!execute_list([Action | Tail])
@@ -74,7 +64,7 @@ battery_state(ok).
 
 
 
-// Azioni del Planner (Richiedono aiuto a House Grid)
+// Azioni del Planner
 +!do_action(disconnect_loads)
     <- .print("      [Richiesta] Chiedo a house_grid di staccare i carichi per aiutarmi a ricaricare");
        .send(house_grid, achieve, disconnect_loads).

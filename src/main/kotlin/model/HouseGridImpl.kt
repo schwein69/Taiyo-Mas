@@ -14,7 +14,6 @@ class HouseGridImpl(
         private set
 
     override var evChargerKw: Double by mutableStateOf(0.0)
-        private set
 
     override var areLoadsDisconnected: Boolean by mutableStateOf(false)
         private set
