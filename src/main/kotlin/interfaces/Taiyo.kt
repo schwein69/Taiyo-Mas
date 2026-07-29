@@ -5,7 +5,6 @@ import model.BatteryImpl
 import model.HouseGridImpl
 import model.Mode
 import model.PanelImpl
-import model.Panelmpl
 import model.Weather
 
 interface Taiyo {

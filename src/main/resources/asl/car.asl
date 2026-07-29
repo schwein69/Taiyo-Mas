@@ -80,8 +80,8 @@ current_mode(balanced).
 
 +!do_action(start_charging)
     <- .print("      -> [Hardware] Attivazione ricarica auto");
-       car_start_charging.
+       resume_ev_charging.
 
 +!do_action(stop_charging)
     <- .print("      -> [Hardware] Sospensione ricarica auto");
-       car_stop_charging.
+       pause_ev_charging.

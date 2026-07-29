@@ -1,56 +1,62 @@
 inverter_state(active).
 current_weather(unknown).
-current_routing(balanced).
+current_routing(hybrid).
 
-// ==========================================
-// RICEZIONE INFORMAZIONI METEO
-// ==========================================
+// RICEZIONE PERCEZIONI METEO DALL'ENVIRONMENT
 
-+weather(sunny)[source(weather)]
-    <-  -+current_weather(sunny);
-        .print("[PANELS] Ricevuto meteo: sunny.").
+// Quando l'Environment Kotlin invia un nuovo status meteo che è DIVERSO dall'ultimo noto
++weather_status(W) : not current_weather(W)
+    <-  -+current_weather(W);
+        .print("[PANELS] Rilevato cambio meteo dall'ambiente: ", W);
+        !evaluate_weather_impact.
 
-+weather(night)[source(weather)]
-    <-  -+current_weather(night);
-        .print("[PANELS] Ricevuto meteo: night.").
-
-+weather(rainy)[source(weather)]
-    <-  -+current_weather(rainy);
-        .print("[PANELS] Ricevuto meteo: rainy.").
-
-+weather(foggy)[source(weather)]
-    <-  -+current_weather(foggy);
-        .print("[PANELS] Ricevuto meteo: foggy.").
+// Se l'Environment ripete lo stesso meteo, ignoriamo per evitare spam in console
++weather_status(W) : current_weather(W)
+    <-  true.
 
 
-// ==========================================
+
+// È notte
++!evaluate_weather_impact : current_weather(night) & inverter_state(active)
+    <-  .print("[PANELS] È notte: produzione nulla. Metto l'inverter in STANDBY.");
+        -+inverter_state(standby);
+        !do_action(panel_standby).
+
+// Torna il sole
++!evaluate_weather_impact : current_weather(sunny) & inverter_state(standby) & not grid_status(blackout)
+    <-  .print("[PANELS] È tornato il sole");
+        -+inverter_state(active);
+        !do_action(panel_resume).
+
+// Maltempo (pioggia o nebbia): informiamo la casa che produrremo poco
++!evaluate_weather_impact : (current_weather(rainy) | current_weather(foggy))
+    <-  .print("[PANELS] Attenzione: produzione ridotta a causa del maltempo.");
+
+// Piano di fallback: per tutti gli altri casi, non è necessaria alcuna azione
++!evaluate_weather_impact
+    <-  true.
+
+
 // GESTIONE DEI FLUSSI ENERGETICI
-// ==========================================
 
-// Gestione Standard (Alimenta casa, ricarica batteria e immette eventuale surplus)
-+pv_flow(combined_distribution)
++pv_flow(combined_distribution) : not current_routing(hybrid)
     <-  -+current_routing(hybrid);
         .print("[PANELS] Distribuzione ibrida.").
 
-// Alta richiesta. Pannelli, batteria e rete alimentano la casa contemporaneamente
-+pv_flow(high_load_all_sources_to_house)
++pv_flow(high_load_all_sources_to_house) : not current_routing(house_only)
     <-  -+current_routing(house_only);
         .print("[PANELS] Pannelli, batteria e rete alimentano la casa.").
 
-// Batteria Piena. L'energia copre la casa e la differenza va tutta in rete
-+pv_flow(battery_full_surplus_to_grid)
++pv_flow(battery_full_surplus_to_grid) : not current_routing(house_and_grid)
     <-  -+current_routing(house_and_grid);
         .print("[PANELS] BATTERIA PIENA. Alimento la casa e immetto il surplus in rete.").
 
-// Immissione totale in rete
-+pv_flow(full_grid_injection)
++pv_flow(full_grid_injection) : not current_routing(grid_only)
     <-  -+current_routing(grid_only);
         .print("[PANELS] Immissione totale in rete.").
 
 
-// ==========================================
 // REAZIONE ALLE INFORMAZIONI DEGLI AGENTI
-// ==========================================
 
 // Reazione autonoma al blackout notificato da un altro agente
 +grid_status(blackout)[source(A)]
@@ -76,7 +82,7 @@ current_routing(balanced).
         !do_action(set_balanced_mode).
 
 +operation_mode(direct)[source(house_grid)]
-    <-  .print("[PANELS] House Grid avvisa: modalità DIRECT. Continuo produzione (bypass batteria).");
+    <-  .print("[PANELS] House Grid avvisa: modalità DIRECT. Continuo immissione.");
         !do_action(set_direct_mode).
 
 
@@ -97,6 +103,6 @@ current_routing(balanced).
     <- .print("      -> Imposto inverter su MODALITÀ BILANCIATA");
        set_balanced_mode.
 
-+!do_action(set_balanced_mode)
++!do_action(set_direct_mode)
     <- .print("      -> Imposto inverter su MODALITÀ DIRECT");
        set_direct_mode.

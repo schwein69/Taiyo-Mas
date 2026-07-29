@@ -1,78 +1,79 @@
+car_state(disconnected).
+charge_level(ok).
 grid_status(connected).
-battery_state(ok).
+current_mode(balanced).
 
-// GESTIONE STATO DI RICARICA
+// GESTIONE COLLEGAMENTO FISICO E BATTERIA (SoC)
 
-+battery_soc(V) : V >= 20
-    <-  -+battery_state(ok);
-        .print("[BATTERY] SoC attuale: ", V, "% - Livello sicuro.").
++car_plugged_in
+    <-  -+car_state(connected);
+        .print("[CAR] Auto collegata alla presa domestica.");
+        !check_charging.
 
-+battery_soc(V) : V < 20 & grid_status(connected)
-    <-  -+battery_state(critical);
-        .print("[BATTERY] ALLARME: SoC critico (", V, "%)! Rete disponibile.");
-        .print("[BATTERY] Chiedo al Planner una strategia di ricarica...");
++car_unplugged
+    <-  -+car_state(disconnected);
+        .print("[CAR] Auto scollegata.");
+        !do_action(stop_charging).
 
-        planning.CalculatePlan("battery", [battery_critical, grid_connected], [battery_ok], Plan);
-        !execute_list(Plan).
++car_soc(V) : V < 80 & car_state(connected) & charge_level(ok)
+    <-  -+charge_level(low);
+        .print("[CAR] Livello batteria auto al ", V, "%. Necessaria ricarica.");
+        !check_charging.
 
-+battery_soc(V) : V < 20 & grid_status(blackout)
-    <-  -+battery_state(critical);
-        .print("[BATTERY] SoC critico (", V, "%), ma c'è BLACKOUT. Resto fermo.").
-
-
-// GESTIONE DEL FLUSSO
-
-+battery_flow(charging)    <- .print("[BATTERY] Flusso: IN CARICA.").
-+battery_flow(discharging) <- .print("[BATTERY] Flusso: IN SCARICA.").
-+battery_flow(idle)        <- .print("[BATTERY] Flusso: FERMO.").
++car_soc(V) : V >= 80 & car_state(connected) & charge_level(low)
+    <-  -+charge_level(ok);
+        .print("[CAR] Livello batteria auto al ", V, "%. Ricarica completata.");
+        !do_action(stop_charging).
 
 
+// REAZIONE ALLE INFORMAZIONI DEGLI AGENTI
 
-// --- Reazione Autonoma alla Rete ---
+//  Reazione Autonoma alla Rete
 +grid_status(blackout)[source(A)]
     <-  -+grid_status(blackout);
-        .print("[BATTERY] Messaggio da ", A, ": BLACKOUT RILEVATO");
-        .print("[BATTERY] Entro in modalità STANDBY.");
-        !do_action(battery_standby).
+        .print("[CAR] Messaggio da ", A, ": BLACKOUT RILEVATO!");
+        .print("[CAR] Sospendo immediatamente la ricarica.");
+        !do_action(stop_charging).
 
 +grid_status(connected)[source(A)]
     <-  -+grid_status(connected);
-        .print("[BATTERY] Messaggio da ", A, ": Rete ripristinata.");
-        .print("[BATTERY] Ritorno operativa.");
-        !do_action(battery_resume).
+        .print("[CAR] Messaggio da ", A, ": Rete ripristinata.");
+        !check_charging. // Valuta se riprendere a caricare
 
 // --- Reazione Autonoma alle Strategie ---
-+operation_mode(direct)[source(house_grid)]
-    <-  .print("[BATTERY] House Grid avvisa: modalità DIRECT. Entro in standby.");
-        !do_action(battery_standby).
++operation_mode(selling)[source(house_grid)]
+    <-  -+current_mode(selling);
+        .print("[CAR] House Grid avvisa: modalità SELLING.");
+        .print("[CAR] Metto in pausa la ricarica per favorire la vendita del solare in rete.");
+        !do_action(stop_charging).
 
 +operation_mode(balanced)[source(house_grid)]
-    <-  .print("[BATTERY] House Grid avvisa: modalità BALANCED. Torno operativa.");
-        !do_action(battery_resume).
+    <-  -+current_mode(balanced);
+        .print("[CAR] House Grid avvisa: modalità BALANCED. Riprendo la normale gestione.");
+        !check_charging.
 
-+operation_mode(selling)[source(house_grid)]
-    <-  .print("[BATTERY] House Grid avvisa: modalità SELLING. Pronta a scaricare verso la rete.");
-        !do_action(battery_selling).
-
-
-
-+!execute_list([]).
-+!execute_list([Action | Tail])
-    <- .print("   -> Eseguo azione Planner: ", Action);
-       !do_action(Action);
-       !execute_list(Tail).
++operation_mode(direct)[source(house_grid)]
+    <-  -+current_mode(direct);
+        .print("[CAR] House Grid avvisa: modalità DIRECT.");
+        !do_action(stop_charging).
 
 
+// LOGICA DI DECISIONE INTERNA
 
-// Azioni del Planner
-+!do_action(disconnect_loads)
-    <- .print("      [Richiesta] Chiedo a house_grid di staccare i carichi per aiutarmi a ricaricare");
-       .send(house_grid, achieve, disconnect_loads).
+// Valuta se ci sono le condizioni per caricare
++!check_charging : charge_level(low) & grid_status(connected) & current_mode(M) & M \== selling & M \== direct & car_state(connected)
+    <- .print("[CAR] Avvio la ricarica intelligente.");
+       !do_action(start_charging).
 
-+!do_action(charge_from_grid)
-    <- .print("      [Richiesta] Chiedo a house_grid di prelevare energia dalla rete per me!");
-       .send(house_grid, achieve, charge_from_grid).
+// Piano di fallback: se le condizioni non sono soddisfatte, non fare nulla
++!check_charging
+    <- .print("[CAR] Condizioni non adatte alla ricarica in questo momento. Resto in pausa.").
 
-+!do_action(battery_standby) <- battery_standby.
-+!do_action(battery_resume)  <- battery_resume.
-+!do_action(battery_selling)  <- battery_selling.
+
++!do_action(start_charging)
+    <- .print("      -> [Hardware] Attivazione ricarica auto");
+       resume_ev_charging. // Coincide con il functor actResumeEvCharging dell'Environment
+
++!do_action(stop_charging)
+    <- .print("      -> [Hardware] Sospensione ricarica auto");
+       pause_ev_charging.  // Coincide con il functor actPauseEvCharging dell'Environment
