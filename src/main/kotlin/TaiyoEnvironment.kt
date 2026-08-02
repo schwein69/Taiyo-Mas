@@ -174,7 +174,7 @@ class TaiyoEnvironment : Environment() {
         } catch (_: Exception) { false }
     }
 
-    private fun updateAgentPercepts() {
+    internal fun updateAgentPercepts() {
         clearPercepts("weather")
         clearPercepts("battery")
         clearPercepts("house_grid")

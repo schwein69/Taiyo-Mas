@@ -15,7 +15,6 @@ class CarImpl(
         private set
 
     override var isPluggedIn: Boolean by mutableStateOf(false)
-        private set
 
     override val soc: Int
         get() = ((currentChargeKwh / batteryCapacityKwh) * 100).toInt()
