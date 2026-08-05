@@ -17,6 +17,9 @@ class TaiyoImpl : Taiyo {
     override var mode: Mode by mutableStateOf(Mode.BALANCED)
 
     override var currentPvFlow: Double by mutableStateOf(0.0)
-    override var currentBatteryFlow: Double by mutableStateOf(0.0) // Positivo: carica, Negativo: scarica
-    override var currentGridFlow: Double by mutableStateOf(0.0)    // Positivo: vendita, Negativo: acquisto
+    override var currentBatteryFlow: Double by mutableStateOf(0.0)
+    override var currentGridFlow: Double by mutableStateOf(0.0)
+
+    override var totalGridPurchased: Double by mutableStateOf(0.0)
+    override var totalGridInjected: Double by mutableStateOf(0.0)
 }

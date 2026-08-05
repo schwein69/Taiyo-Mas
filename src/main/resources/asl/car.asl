@@ -3,35 +3,46 @@ charge_level(ok).
 grid_status(connected).
 current_mode(balanced).
 
-// ==========================================
 // GESTIONE COLLEGAMENTO FISICO E BATTERIA (SoC)
-// ==========================================
 
-+car_plugged_in
+// Se viene collegata e prima NON lo era
++car_plugged_in : not car_state(connected)
     <-  -+car_state(connected);
         .print("[CAR] Auto collegata alla presa domestica.");
         !check_charging.
 
-+car_unplugged
++car_plugged_in : car_state(connected)
+    <-  true.
+
++car_unplugged : not car_state(disconnected)
     <-  -+car_state(disconnected);
         .print("[CAR] Auto scollegata.");
         !do_action(stop_charging).
 
++car_unplugged : car_state(disconnected)
+    <-  true.
+
+
 // Gestione Livello Batteria (es. soglia desiderata all'80%)
-+car_soc(V) : V < 80 & car_state(connected)
+// Agisce solo se rileva batteria bassa e NON avevamo già registrato charge_level(low)
++car_soc(V) : V < 80 & car_state(connected) & not charge_level(low)
     <-  -+charge_level(low);
         .print("[CAR] Livello batteria auto al ", V, "%. Necessaria ricarica.");
         !check_charging.
 
-+car_soc(V) : V >= 80 & car_state(connected)
+// Agisce solo se rileva batteria carica e NON avevamo già registrato charge_level(ok)
++car_soc(V) : V >= 80 & car_state(connected) & not charge_level(ok)
     <-  -+charge_level(ok);
         .print("[CAR] Livello batteria auto al ", V, "%. Ricarica completata.");
-        !do_action(stop_charging).
+        !do_action(stop_charging);
+        .send(house_grid, tell, car_is_full).
+
+// Ignora i continui aggiornamenti percentuali intermedi inviati dall'Environment
++car_soc(V)
+    <-  true.
 
 
-// ==========================================
 // REAZIONE ALLE INFORMAZIONI DEGLI AGENTI
-// ==========================================
 
 // --- Reazione Autonoma alla Rete  ---
 +grid_status(blackout)[source(A)]
@@ -63,10 +74,7 @@ current_mode(balanced).
         !do_action(stop_charging).
 
 
-// ==========================================
 // LOGICA DI DECISIONE INTERNA
-// ==========================================
-// Valuta se ci sono le condizioni per caricare
 
 +!check_charging : charge_level(low) & grid_status(connected) & current_mode(M) & M \== selling & M \== direct & car_state(connected)
     <- .print("[CAR] Avvio la ricarica intelligente.");
@@ -77,6 +85,7 @@ current_mode(balanced).
     <- .print("[CAR] Condizioni non adatte alla ricarica in questo momento.").
 
 
+// AZIONI HARDWARE
 
 +!do_action(start_charging)
     <- .print("      -> [Hardware] Attivazione ricarica auto");

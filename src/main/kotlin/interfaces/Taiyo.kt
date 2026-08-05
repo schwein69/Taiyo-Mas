@@ -19,5 +19,9 @@ interface Taiyo {
 
     var currentPvFlow: Double
     var currentBatteryFlow: Double
+
     var currentGridFlow: Double
+
+    var totalGridPurchased: Double
+    var totalGridInjected: Double
 }

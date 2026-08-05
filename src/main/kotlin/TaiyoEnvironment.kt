@@ -196,6 +196,7 @@ class TaiyoEnvironment : Environment() {
             if (!model.house.isBlackout) addPercept("house_grid", gridConnected)
             else addPercept("house_grid", blackoutActive)
         }
+
         if (model.currentGridFlow < -2.9 && model.car.isCharging) {
             addPercept("house_grid", Literal.parseLiteral("overload_risk"))
         }
@@ -286,6 +287,12 @@ class TaiyoEnvironment : Environment() {
                         model.currentGridFlow = 0.0
                         model.house.checkOverload(model.currentPvFlow, model.battery.currentChargeKw)
                     }
+                }
+
+                if (model.currentGridFlow < 0.0) {
+                    model.totalGridPurchased += abs(model.currentGridFlow) * deltaTimeHours
+                } else if (model.currentGridFlow > 0.0) {
+                    model.totalGridInjected += model.currentGridFlow * deltaTimeHours
                 }
 
                 if (model.house.evChargerKw > 0 && model.car.isCharging) {

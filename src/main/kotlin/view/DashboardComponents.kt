@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import interfaces.Taiyo
 import model.Mode
 import model.WeatherStatus
+import kotlin.math.abs
 
 @Composable
 fun PanelsCard(model: Taiyo) {
@@ -77,12 +78,29 @@ fun HouseGridCard(model: Taiyo) {
     Card(modifier = Modifier.fillMaxWidth(), elevation = 4.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Casa & Rete", fontWeight = FontWeight.Bold)
-            Text("Consumo Casa: ${String.format("%.2f", model.house.currentConsumptionKw)} kW")
-            Text("Scambio Rete: ${String.format("%.2f", model.currentGridFlow)} kW (Positivo = Immetto)")
+            Text("Consumo Casa (istantaneo): ${String.format("%.2f", model.house.currentConsumptionKw)} kW")
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Flusso di Rete Attuale:", fontWeight = FontWeight.SemiBold)
+            if (model.currentGridFlow < 0.0) {
+                Text("↓ Prelevando da Rete: ${String.format("%.2f", abs(model.currentGridFlow))} kW", color = Color.Red)
+            } else if (model.currentGridFlow > 0.0) {
+                Text("↑ Immettendo in Rete: ${String.format("%.2f", model.currentGridFlow)} kW", color = Color(0xFF4CAF50)) // Verde scuro
+            } else {
+                Text("Equilibrio perfetto (0.00 kW)", color = Color.Gray)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text("Contatori Energia (Totale):", fontWeight = FontWeight.SemiBold)
+            Text("Energia Acquistata: ${String.format("%.2f", model.totalGridPurchased)} kWh", color = Color.Red)
+            Text("Energia Venduta: ${String.format("%.2f", model.totalGridInjected)} kWh", color = Color(0xFF4CAF50))
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             val gridStatus = if (model.house.isBlackout) "BLACKOUT" else "Connessa"
-            Text("Stato Rete Esterna: $gridStatus", color = if (model.house.isBlackout) Color.Red else Color.Black)
+            Text("Stato Rete Esterna: $gridStatus", color = if (model.house.isBlackout) Color.Red else Color.Black, fontWeight = FontWeight.Bold)
         }
     }
 }

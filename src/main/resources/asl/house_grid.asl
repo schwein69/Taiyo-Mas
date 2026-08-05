@@ -137,9 +137,11 @@ battery(ok).
     <- .print("      -> [Hardware] Abilito il prelievo forzato dalla rete verso la batteria.");
        force_grid_charging.
 
-// ==========================================
++!do_action(set_selling_mode)
+    <- .print("      -> [Hardware] Comando il sistema per passare alla VENDITA TOTALE (Selling Mode).");
+       set_selling_mode.
+
 // GESTIONE DELLE STRATEGIE OPERATIVE
-// ==========================================
 
 // Passaggio a modalità BALANCED
 +system_mode(balanced) : active_mode(M) & M \== balanced
@@ -167,3 +169,7 @@ battery(ok).
 +!charge_from_grid[source(battery)]
     <-  .print("[HOUSE_GRID] Ricevuta richiesta da battery: prelevo energia dalla rete per ricaricarla.");
         !do_action(force_grid_charging).
+
++car_is_full[source(car)]
+    <-  .print("[HOUSE_GRID] L'auto è carica. Attivo modalità di Vendita!");
+        !do_action(set_selling_mode).
