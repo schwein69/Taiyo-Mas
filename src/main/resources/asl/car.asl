@@ -8,8 +8,7 @@ current_mode(balanced).
 // Se viene collegata e prima NON lo era
 +car_plugged_in : not car_state(connected)
     <-  -+car_state(connected);
-        .print("[CAR] Auto collegata alla presa domestica.");
-        !check_charging.
+        .print("[CAR] Auto collegata alla presa domestica.").
 
 +car_plugged_in : car_state(connected)
     <-  true.

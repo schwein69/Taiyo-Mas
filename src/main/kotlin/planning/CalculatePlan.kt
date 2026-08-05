@@ -16,10 +16,10 @@ class CalculatePlan : DefaultInternalAction() {
             val modelType = args[0].toString().replace("\"", "")
 
             val initialList = args[1] as ListTerm
-            val initialState = initialList.map { Proposition(it.toString())}.toSet()
-8
+            val initialState = initialList.map { Proposition(it.toString().replace("\"", "")) }.toSet()
+
             val goalList = args[2] as ListTerm
-            val goalState = goalList.map { Proposition(it.toString())}.toSet()
+            val goalState = goalList.map { Proposition(it.toString().replace("\"", "")) }.toSet()
 
             val domainActions = when (modelType) {
                 "battery" -> BatteryDomain.actions
